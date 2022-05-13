@@ -1,10 +1,13 @@
 
 #include "pch.h"
 #include "Game.h"
+#include <time.h>
 
 #ifdef DXTK_AUDIO
 #include <Dbt.h>
 #endif
+
+
 using namespace DirectX;
 
 namespace
@@ -72,7 +75,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
         AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
 
-        HWND hwnd = CreateWindowExW(0, L"DirectXTKSimpleSampleWindowClass", L"Direct X Game Dev Template", WS_OVERLAPPEDWINDOW,
+        HWND hwnd = CreateWindowExW(0, L"DirectXTKSimpleSampleWindowClass", L"Direct X Game of Life Maze", WS_OVERLAPPEDWINDOW,
             CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
             nullptr);
 

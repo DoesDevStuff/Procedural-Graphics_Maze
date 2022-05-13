@@ -9,6 +9,9 @@
 //toreorganise
 #include <fstream>
 
+// defining maximum lives for player
+#define PLAYER_LIVES_MAX 4
+
 extern void ExitGame();
 
 using namespace DirectX;
@@ -57,8 +60,8 @@ void Game::Initialize(HWND window, int width, int height)
 	ImGui_ImplWin32_Init(window);		//tie to our window
 	ImGui_ImplDX11_Init(m_deviceResources->GetD3DDevice(), m_deviceResources->GetD3DDeviceContext());	//tie to directx
 
-	m_fullscreenRect.left = 0;
-	m_fullscreenRect.top = 0;
+	m_fullscreenRect.left = 0;// might change this to something like 15
+	m_fullscreenRect.top = 0;// same as up
 	m_fullscreenRect.right = 800;
 	m_fullscreenRect.bottom = 600;
 
@@ -70,13 +73,29 @@ void Game::Initialize(HWND window, int width, int height)
 	//setup light
 	m_Light.setAmbientColour(0.3f, 0.3f, 0.3f, 1.0f);
 	m_Light.setDiffuseColour(1.0f, 1.0f, 1.0f, 1.0f);
-	m_Light.setPosition(2.0f, 1.0f, 1.0f);
+	m_Light.setPosition(10.0f, 1.0f, 10.0f); // set position at different place - test to see if okay later
 	m_Light.setDirection(-1.0f, -1.0f, 0.0f);
 
-	//setup camera
-	m_Camera01.setPosition(Vector3(0.0f, 0.0f, 4.0f));
-	m_Camera01.setRotation(Vector3(-90.0f, -180.0f, 0.0f));	//orientation is -90 becuase zero will be looking up at the sky straight up. 
+    //Variables!!!
+    isColliding = false;
+    isMiniMapEnabled = false;
+    _isPlaying = false;
 
+    _gameScore = 0;
+    _playerPosition = 0;
+
+
+    //Have the player in the maze , potientially make this random, like we did for terrain in lab
+    //Function needed for that
+    SpawnPlayerPosition();
+
+
+	/*No camera set up we want player view to handle that
+    * Will make more sense later
+    //setup camera
+	//m_Camera01.setPosition(Vector3(0.0f, 0.0f, 4.0f));
+	//m_Camera01.setRotation(Vector3(-90.0f, -180.0f, 0.0f));	//orientation is -90 becuase zero will be looking up at the sky straight up. 
+    */
 	
 #ifdef DXTK_AUDIO
     // Create DirectXTK for Audio objects
@@ -138,6 +157,8 @@ void Game::Update(DX::StepTimer const& timer)
 	//this is hacky,  i dont like this here.  
 	auto device = m_deviceResources->GetD3DDevice();
 
+    /// camera is the Player
+
 	//note that currently.  Delta-time is not considered in the game object movement. 
 	if (m_gameInputCommands.left)
 	{
@@ -151,23 +172,102 @@ void Game::Update(DX::StepTimer const& timer)
 		rotation.y = rotation.y -= m_Camera01.getRotationSpeed();
 		m_Camera01.setRotation(rotation);
 	}
-	if (m_gameInputCommands.forward)
-	{
-		Vector3 position = m_Camera01.getPosition(); //get the position
-		position += (m_Camera01.getForward()*m_Camera01.getMoveSpeed()); //add the forward vector
-		m_Camera01.setPosition(position);
-	}
-	if (m_gameInputCommands.back)
-	{
-		Vector3 position = m_Camera01.getPosition(); //get the position
-		position -= (m_Camera01.getForward()*m_Camera01.getMoveSpeed()); //add the forward vector
-		m_Camera01.setPosition(position);
-	}
+
+    // Collision movement check, better if this is on forward / backwards else too difficult 
+    
+    if (!isColliding) 
+    {
+        if (m_gameInputCommands.forward)
+        {
+            Vector3 position = m_Camera01.getPosition(); //get the position
+            position += (m_Camera01.getForward() * m_Camera01.getMoveSpeed()); //add the forward vector
+
+            //bounds 
+            if (position.x >= 25.f) 
+            {
+                position.x = 25.f;
+            }
+            if (position.x <= 0.f) 
+            {
+                position.x = 0.f;
+            }
+            if (position.z >= 25.f)
+            {
+                position.z = 25.0f;
+            }
+            if (position.z <= 0.f) 
+            {
+                position.z = 0.f;
+            }
+            
+            m_Camera01.setPosition(position);
+        }
+         
+
+        if (m_gameInputCommands.back)
+        {
+            Vector3 position = m_Camera01.getPosition(); //get the position
+            position -= (m_Camera01.getForward() * m_Camera01.getMoveSpeed()); //add the forward vector
+            if (position.x >= 25.f) {
+                position.x = 25.f;
+            }
+            if (position.x <= 0.f) {
+                position.x = 0.f;
+            }
+            if (position.z >= 25.f)
+                position.z = 25.0f;
+            if (position.z <= 0.f)
+                position.z = 0.f;
+            m_Camera01.setPosition(position);
+        }
+        _currentPlayerPosition = m_Camera01.getPosition();
+        
+    }
+    //collision else stuff
+    else
+    {
+        Vector3 newPosition = Vector3(_colliderPosition.x + 0.5f, 0.5f, _colliderPosition.z + 0.5f);
+        //_colliderPosition + _currentInitialPosition
+        m_Camera01.setPosition(_playerInitialPosition);
+        m_Camera01.setRotation(_playerInitialRotation);
+
+        // adding game points default and penalties
+        if (_gameScore <= 0) 
+        {
+            _gameScore = 0;
+        }
+        else {
+            _gameScore -= 5;
+        }
+        isColliding = false;
+    }
+	
 
 	if (m_gameInputCommands.generate)
 	{
 		m_Terrain.GenerateHeightMap(device);
 	}
+
+
+    if (m_gameInputCommands.midpoint) {
+        m_Terrain.GenerateMidpointHeightMap(device);
+    }
+
+    if (m_gameInputCommands.smoothen) {
+        m_Terrain.SmoothenHeightMap(device);
+    }
+
+    if (m_gameInputCommands.cellularAutomata) {
+        _dungeonGrid.nextGeneration();
+    }
+
+
+    if (m_gameInputCommands.isMiniMapEnabled) {
+        isMiniMapEnabled = !isMiniMapEnabled;
+    }
+
+    // POST Processing goes here, maybe blur / bloom ??
+
 
 	m_Camera01.Update();	//camera update.
 	m_Terrain.Update();		//terrain update.  doesnt do anything at the moment. 
@@ -177,6 +277,87 @@ void Game::Update(DX::StepTimer const& timer)
 
 	/*create our UI*/
 	SetupGUI();
+
+    std::wstring ws2 = L" Camera Position";
+    std::wstring ws1 = std::to_wstring(_playerPosition);
+    std::wstring s(ws1);
+    s += std::wstring(ws2);
+    const wchar_t* debug = s.c_str();
+    debugLine = debug;
+    
+
+    // collectibles collision check
+    if (CollisionCheck(_playerBoxCollision, _collectible))
+    {
+        debugLine = L"Found a collectible";
+        /// <summary>
+        /// take 2 inputs collectible and the player
+        /// grid should also be fed to A Star
+        /// </summary>
+        /// <param name="initializeGrid();"></param>
+        _dungeonGrid.initializeGrid();
+        SpawnPlayerPosition();
+        _gameScore += 30;
+        
+    }
+    else {
+        debugLine = L"";
+        isColliding = false;
+    }
+
+    // we need to check for a collision with every cell in the grid
+    // collision check logic
+
+    if (_dungeonGrid.getInitialised()) 
+    {
+        //need to make sure that rendering happens first
+        for (int i = 0; i < _dungeonGrid.Size(); i++) 
+        {
+            for (int j = 0; j < _dungeonGrid.Size(); j++) 
+            {
+                if (CellCollisionCheck(_playerBoxCollision, _dungeonGrid.cellMatrix[i][j])) 
+                {
+                    //need to check a couple of states
+                    if (_dungeonGrid.cellMatrix[i][j].GetState() == 1 )
+                    {
+                        _colliderPosition = _dungeonGrid.cellMatrix[i][j].GetPosition();
+
+                        if (_colliderPosition == _playerInitialPosition) 
+                        {
+                            _dungeonGrid.initializeGrid();
+                            SpawnPlayerPosition();
+                            _playerLives = PLAYER_LIVES_MAX;
+                        }
+                        else 
+                        {
+                            debugLine = L"Hit Obstacles!";
+                            isColliding = true;
+                        }
+                    }
+                    else 
+                    {   
+                        //debugLine = L"Collision Null";
+                    }
+                }
+                else 
+                {
+                    _isPlaying = false;
+                    _playerLives = PLAYER_LIVES_MAX;
+
+                    /*LOGIC CHECKS
+                        //debugLine = L"Null";
+					    //m_collisions--;
+					    //debugLine = L"Collision Null";
+					    //m_collisions--;
+					    //debugLine = L"No Collision";
+                    */
+                }
+            }
+        }
+    }
+    //debugLine = L"";
+    //debugLine = m_Camera01.getPosition().x;
+    //debugLine += m_Camera01.getPosition().z;
 
 #ifdef DXTK_AUDIO
     m_audioTimerAcc -= (float)timer.GetElapsedSeconds();
@@ -230,33 +411,365 @@ void Game::Render()
 
     // Draw Text to the screen
     m_sprites->Begin();
-		m_font->DrawString(m_sprites.get(), L"Procedural Methods", XMFLOAT2(10, 10), Colors::Yellow);
+		m_font->DrawString(m_sprites.get(), L"Cellular Automata Dungeon", XMFLOAT2(10, 10), Colors::DeepSkyBlue);
     m_sprites->End();
 
-	//Set Rendering states. 
+    // Draw skybox here // translate to camera position
 	context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
 	context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
-	context->RSSetState(m_states->CullClockwise());
-//	context->RSSetState(m_states->Wireframe());
+    context->RSSetState(m_states->CullNone());
+	//context->RSSetState(m_states->CullClockwise());
+    //context->RSSetState(m_states->Wireframe());
 
-	//prepare transform for floor object. 
+	//prepare transform for skybox
 	m_world = SimpleMath::Matrix::Identity; //set world back to identity
-	SimpleMath::Matrix newPosition3 = SimpleMath::Matrix::CreateTranslation(0.0f, -0.6f, 0.0f);
-	SimpleMath::Matrix newScale = SimpleMath::Matrix::CreateScale(0.1);		//scale the terrain down a little. 
-	m_world = m_world * newScale *newPosition3;
+    SimpleMath::Matrix skyboxPosition = SimpleMath::Matrix::CreateTranslation(m_Camera01.getPosition());
+    m_world = m_world * skyboxPosition;
 
+    m_BasicShaderPair_Normal.EnableShader(context);
+    m_BasicShaderPair_Normal.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_texture5.Get());
+    _skybox.Render(context);
+    /*ORIGINAL CODE
+    //SimpleMath::Matrix newPosition3 = SimpleMath::Matrix::CreateTranslation(0.0f, -0.6f, 0.0f);
+	//SimpleMath::Matrix newScale = SimpleMath::Matrix::CreateScale(0.1);		//scale the terrain down a little. 
+	//m_world = m_world * newScale *newPosition3;
+    */
+    /*
 	//setup and draw cube
 	m_BasicShaderPair.EnableShader(context);
 	m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_texture1.Get());
 	m_Terrain.Render(context);
-	
-	//render our GUI
-	ImGui::Render();
-	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-	
+	*/
+
+    //Reset Rendering states. 
+    context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
+    context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
+    context->RSSetState(m_states->CullClockwise());
+    //context->RSSetState(m_states->Wireframe()); // this enables wireframe
+
+    // Minimap Render to Texture
+    RenderTextureMinimap();
+
+    /*
+    if (enableBlur)
+    {
+        Blur();
+    }
+    */
+    //else { /* REMOVE COMMENT ON ELSE LATER WHEN BLUR IS IMPLEMENTED
+        //prepare transform for floor object. 
+        m_world = SimpleMath::Matrix::Identity; //set world back to identity
+        SimpleMath::Matrix newPosition3 = SimpleMath::Matrix::CreateTranslation(0.0f, 0.0f, 0.0f);
+        SimpleMath::Matrix newScale = SimpleMath::Matrix::CreateScale(0.1);		//scale the terrain down a little. 
+        m_world = m_world * newScale * newPosition3;
+
+        //setup and draw floor
+        m_BasicShaderPair.EnableShader(context);
+        m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_texture1.Get());
+        m_Terrain.Render(context);
+
+        // CellGrid
+
+        for (int i = 0; i < _dungeonGrid.Size(); i++)
+        {
+            for (int j = 0; j < _dungeonGrid.Size(); j++)
+            {
+
+                Vector3 tempPosition = DirectX::SimpleMath::Vector3(i, 0.5f, j);
+                _dungeonGrid.cellMatrix[i][j].SetPosition(tempPosition);
+                _dungeonGrid.cellMatrix[i][j].SetCentre(tempPosition);
+
+                m_world = SimpleMath::Matrix::Identity; //set world back to identity
+                newPosition3 = SimpleMath::Matrix::CreateTranslation(_dungeonGrid.cellMatrix[i][j].GetPosition());
+                m_world = m_world * newPosition3;
+
+                if (_dungeonGrid.cellMatrix[i][j].GetState() == 1)
+                {
+                    m_BasicShaderPair.EnableShader(context);
+                    m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_texture2.Get());
+                    _cellBox.SetCentre(_dungeonGrid.cellMatrix[i][j].GetPosition());
+                    _cellBox.Render(context);
+                }
+                else if (_dungeonGrid.cellMatrix[i][j].GetState() == 3)
+                {
+                    //setup and draw treasure // draw object
+                    m_BasicShaderPair.EnableShader(context);
+                    m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_texture3.Get());
+                    _collectible.SetCentre(_dungeonGrid.cellMatrix[i][j].GetPosition());
+                    _collectible.Render(context);
+                }
+                else {
+                    // do nothing
+                }
+            }
+
+       // } /* REMOVE COMMENT ON ELSE LATER WHEN BLUR IS IMPLEMENTED
+
+
+        /* First render player so that Collision will know beforehand where player is in current point of time */
+
+        //prepare transform for Player object. // set coordinates
+        m_world = SimpleMath::Matrix::Identity; //set world back to identity
+        newPosition3 = SimpleMath::Matrix::CreateTranslation(m_Camera01.getPosition().x, m_Camera01.getPosition().y, m_Camera01.getPosition().z);
+        _playerBoxCollision.SetCentre(m_Camera01.getPosition());
+        newScale = SimpleMath::Matrix::CreateScale(1);
+        m_world = m_world * newScale * newPosition3;
+
+        //setup and draw rectangle
+        m_BasicShaderPair.EnableShader(context);
+        m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, NULL); // invisible collision box for player
+        _playerBoxCollision.Render(context);
+    }
+
+    if (!_dungeonGrid.GetInitialised()) {
+        _dungeonGrid.SetInitialised(true);
+    }
+
+    //render our GUI
+    //ImGui::Render();
+    //ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+    // Hides GUI
+    ImGui::EndFrame();
+
+
+
+    /* REFERENCE
+    //O'Neal, B., 2018. std::string_view: The Duct Tape of String Types. 
+    //[Blog] C++ Team Blog, 
+    //Available at: <https://devblogs.microsoft.com/cppblog/stdstring_view-the-duct-tape-of-string-types/> [Accessed 19 April 2022].
+    */
+
+    /* Game Score */
+    std::wstring ws4 = L" Score: ";
+    std::wstring ws3 = std::to_wstring(_gameScore);
+    std::wstring s_playerScore(ws3);
+    s_playerScore += std::wstring(ws4);
+    const wchar_t* playerScore = s_playerScore.c_str();
+
+    /* Distance to Collectible */
+    std::wstring ws5 = std::to_wstring(*_dungeonGrid.GetDistance());
+    std::wstring ws6 = L" A* Distance: ";
+    std::wstring _collectibleDistance(ws5);
+    _collectibleDistance += std::wstring(ws6);
+    const wchar_t* distance = _collectibleDistance.c_str();
+
+    // Draw Text to the screen
+    m_sprites->Begin();
+    m_font->DrawString(m_sprites.get(), L"Find the treasure!", XMFLOAT2((m_deviceResources->GetScreenViewport().Width / 2) - 100.0f, m_deviceResources->GetScreenViewport().TopLeftY), Colors::Yellow);
+    if (*_dungeonGrid.GetDistance() != 0)
+    {
+        m_font->DrawString(m_sprites.get(), distance, XMFLOAT2((m_deviceResources->GetScreenViewport().Width) - 100.0f, m_deviceResources->GetScreenViewport().TopLeftY), Colors::Yellow);
+    }
+    else
+    {
+        m_font->DrawString(m_sprites.get(), L"Press G", XMFLOAT2((m_deviceResources->GetScreenViewport().Width) - 100.0f, m_deviceResources->GetScreenViewport().TopLeftY), Colors::Yellow);
+    }
+    //m_font->DrawString(m_sprites.get(), fps, XMFLOAT2(5, m_deviceResources->GetScreenViewport().Height - 40.f), Colors::White);
+    m_font->DrawString(m_sprites.get(), L"G - Next iteration in Cellular Automata | V - Render to Texture | B - Blur", XMFLOAT2((m_deviceResources->GetScreenViewport().Width / 2) - 400.0f, m_deviceResources->GetScreenViewport().Height - 40.f), Colors::Yellow);
+    m_font->DrawString(m_sprites.get(), playerScore, XMFLOAT2(m_deviceResources->GetScreenViewport().Width - 110.0f, m_deviceResources->GetScreenViewport().Height - 40.f), Colors::White);
+
+    //m_font->DrawString(m_sprites.get(), debugLine.c_str(), XMFLOAT2(10, 40), Colors::Yellow);
+    m_sprites->End();
+
+  
+
+
+    if (isMiniMapEnabled)
+    {
+        m_sprites->Begin();
+        m_sprites->Draw(m_FirstRenderPass->getShaderResourceView(), m_fullscreenRect);
+        m_sprites->End();
+    }
+
 
     // Show the new frame.
     m_deviceResources->Present();
+}
+
+
+
+bool Game::CollisionCheck(ModelClass a, ModelClass b)
+{
+    float aMinX, aMaxX, aMinY, aMaxY, aMinZ, aMaxZ = 0.f;
+    float bMinX, bMaxX, bMinY, bMaxY, bMinZ, bMaxZ = 0.f;
+
+    float widthA = a.GetDimensions().x;
+    float widthB = b.GetDimensions().x;
+    float heightA = a.GetDimensions().y;
+    float heightB = b.GetDimensions().y;
+    float depthA = a.GetDimensions().z;
+    float depthB = b.GetDimensions().z;
+
+    aMinX = a.GetCentre().x - (widthA / 2);
+    aMaxX = a.GetCentre().x + (widthA / 2);
+
+    aMinY = a.GetCentre().y - (heightA / 2);
+    aMaxY = a.GetCentre().y + (heightA / 2);
+
+    aMinZ = a.GetCentre().z - (depthA / 2);
+    aMaxZ = a.GetCentre().z + (depthA / 2);
+
+    bMinX = b.GetCentre().x - (widthB / 2);
+    bMaxX = b.GetCentre().x + (widthB / 2);
+
+    bMinY = b.GetCentre().y - (heightB / 2);
+    bMaxY = b.GetCentre().y + (heightB / 2);
+
+    bMinZ = b.GetCentre().z - (depthB / 2);
+    bMaxZ = b.GetCentre().z + (depthB / 2);
+
+    // Get two boxes and check collisions between them AABB
+    return (aMinX <= bMaxX && aMaxX >= bMinX) &&
+        (aMinY <= bMaxY && aMaxY >= bMinY) &&
+        (aMinZ <= bMaxZ && aMaxZ >= bMinZ);
+}
+
+bool Game::CellCollisionCheck(ModelClass a, Cell b)
+{
+    float aMinX, aMaxX, aMinY, aMaxY, aMinZ, aMaxZ = 0.f;
+    float bMinX, bMaxX, bMinY, bMaxY, bMinZ, bMaxZ = 0.f;
+
+    float widthA = a.GetDimensions().x;
+    float widthB = b.GetDimensions().x;
+    float heightA = a.GetDimensions().y;
+    float heightB = b.GetDimensions().y;
+    float depthA = a.GetDimensions().z;
+    float depthB = b.GetDimensions().z;
+
+    aMinX = a.GetCentre().x - (widthA / 2);
+    aMaxX = a.GetCentre().x + (widthA / 2);
+
+    aMinY = a.GetCentre().y - (heightA / 2);
+    aMaxY = a.GetCentre().y + (heightA / 2);
+
+    aMinZ = a.GetCentre().z - (depthA / 2);
+    aMaxZ = a.GetCentre().z + (depthA / 2);
+
+    bMinX = b.GetCentre().x - (widthB / 2);
+    bMaxX = b.GetCentre().x + (widthB / 2);
+
+    bMinY = b.GetCentre().y - (heightB / 2);
+    bMaxY = b.GetCentre().y + (heightB / 2);
+
+    bMinZ = b.GetCentre().z - (depthB / 2);
+    bMaxZ = b.GetCentre().z + (depthB / 2);
+
+    if (aMinX <= bMaxX && aMaxX >= bMinX)
+    {
+        m_backwardCollision = true;
+    }
+    else if (aMinZ <= bMaxZ && aMaxZ >= bMinZ)
+    {
+        m_forwardCollision = true;
+    }
+
+    // Get two boxes and check collisions between them AABB
+    return (aMinX <= bMaxX && aMaxX >= bMinX) &&
+        (aMinY <= bMaxY && aMaxY >= bMinY) &&
+        (aMinZ <= bMaxZ && aMaxZ >= bMinZ);
+}
+
+void Game::RenderTextureMinimap() {
+
+    auto context = m_deviceResources->GetD3DDeviceContext();
+    auto renderTargetView = m_deviceResources->GetRenderTargetView();
+    auto depthTargetView = m_deviceResources->GetDepthStencilView();
+    // Set the render target to be the render to texture.
+    m_FirstRenderPass->setRenderTarget(context);
+    // Clear the render to texture.
+    m_FirstRenderPass->clearRenderTarget(context, 0.8f, 0.8f, 0.8f, 1.0f);
+
+    //prepare transform for floor object. 
+    m_world = SimpleMath::Matrix::Identity; //set world back to identity
+    SimpleMath::Matrix newPosition3 = SimpleMath::Matrix::CreateTranslation(0.0f, 0.0f, 0.0f);
+    SimpleMath::Matrix newScale = SimpleMath::Matrix::CreateScale(0.1);		//scale the terrain down a little. 
+    m_world = m_world * newScale * newPosition3;
+
+    //setup and draw floor
+    m_BasicShaderPair.EnableShader(context);
+    m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_texture1.Get());
+    m_Terrain.Render(context);
+
+    // dungeon Grid
+
+    for (int i = 0; i < _dungeonGrid.Size(); i++)
+    {
+        for (int j = 0; j < _dungeonGrid.Size(); j++)
+        {
+
+            Vector3 tempPosition = DirectX::SimpleMath::Vector3(i, 0.5f, j);
+            _dungeonGrid.cellMatrix[i][j].SetPosition(tempPosition);
+            _dungeonGrid.cellMatrix[i][j].SetCentre(tempPosition);
+
+            m_world = SimpleMath::Matrix::Identity; //set world back to identity
+            newPosition3 = SimpleMath::Matrix::CreateTranslation(_dungeonGrid.cellMatrix[i][j].GetPosition());
+            m_world = m_world * newPosition3;
+
+            if (_dungeonGrid.cellMatrix[i][j].GetState() == 1)
+            {
+                m_BasicShaderPair.EnableShader(context);
+                m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_texture2.Get());
+                _cellBox.SetCentre(_dungeonGrid.cellMatrix[i][j].GetPosition());
+                _cellBox.Render(context);
+            }
+            else if (_dungeonGrid.cellMatrix[i][j].GetState() == 3)
+            {
+                //setup and draw collectible // draw object
+                m_BasicShaderPair.EnableShader(context);
+                m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_texture3.Get());
+                _collectible.SetCentre(_dungeonGrid.cellMatrix[i][j].GetPosition());
+                _collectible.Render(context);
+            }
+            else {
+                // do nothing
+            }
+        }
+    }
+
+    /* First render player so that Intersect will know beforehand where player is in current point of time */
+
+    //prepare transform for Player object. // set coordinates
+    m_world = SimpleMath::Matrix::Identity; //set world back to identity
+    newPosition3 = SimpleMath::Matrix::CreateTranslation(m_Camera01.getPosition().x, m_Camera01.getPosition().y, m_Camera01.getPosition().z);
+    _playerBoxCollision.SetCentre(m_Camera01.getPosition());
+    newScale = SimpleMath::Matrix::CreateScale(1);
+    m_world = m_world * newScale * newPosition3;
+
+    //setup and draw rectangle
+    m_BasicShaderPair.EnableShader(context);
+    // show texture for minimap
+    m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_texture4.Get()); 
+    _playerBoxCollision.Render(context);
+
+    // Reset the render target back to the original back buffer and not the render to texture anymore.	
+    context->OMSetRenderTargets(1, &renderTargetView, depthTargetView);
+}
+
+void Game::SpawnPlayerPosition()
+{
+    for (int i = 0; i < _dungeonGrid.Size(); i++) 
+    {
+        for (int j = 0; j < _dungeonGrid.Size(); j++) 
+        {
+            // we don't want player spawning at origin only
+            int randomValue = rand() % (_dungeonGrid.Size() - 1) + 1;
+            _playerInitialPosition = Vector3(randomValue, 0.5f, randomValue);
+            _playerInitialRotation = Vector3(-90.0f, 0.0f, 0.0f);
+
+            if(_dungeonGrid.cellMatrix[i][j].GetState() == 2)
+            {
+                _dungeonGrid.cellMatrix[i][j].SetPosition(_playerInitialPosition);
+                _dungeonGrid.cellMatrix[i][j].SetCentre(_playerInitialPosition);
+
+                _dungeonGrid.ResetPlayerInStateMatrix(j, i);
+
+                m_Camera01.setPosition(_dungeonGrid.cellMatrix[i][j].GetPosition());
+                m_Camera01.setRotation(_playerInitialRotation);
+                _playerPosition++;
+                return;
+            }
+        }
+    }
 }
 
 
@@ -270,7 +783,7 @@ void Game::Clear()
     auto renderTarget = m_deviceResources->GetRenderTargetView();
     auto depthStencil = m_deviceResources->GetDepthStencilView();
 
-    context->ClearRenderTargetView(renderTarget, Colors::CornflowerBlue);
+    context->ClearRenderTargetView(renderTarget, Colors::Black);
     context->ClearDepthStencilView(depthStencil, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
     context->OMSetRenderTargets(1, &renderTarget, depthStencil);
 
@@ -282,6 +795,7 @@ void Game::Clear()
 }
 
 #pragma endregion
+
 
 #pragma region Message Handlers
 // Message handlers
@@ -355,17 +869,27 @@ void Game::CreateDeviceDependentResources()
     m_sprites = std::make_unique<SpriteBatch>(context);
     m_font = std::make_unique<SpriteFont>(device, L"SegoeUI_18.spritefont");
 	m_batch = std::make_unique<PrimitiveBatch<VertexPositionColor>>(context);
+    m_postProcess = std::make_unique<BasicPostProcess>(device); // postprocess
+
 
 	//setup our terrain
-	m_Terrain.Initialize(device, 128, 128);
+	//m_Terrain.Initialize(device, 128, 128);
+	m_Terrain.Initialize(device, 257, 257);
+
+    _playerBoxCollision.InitializeBox(device, 0.5, 0.5, 0.5);
+    _cellBox.InitializeBox(device, 1, 1, 1);
+    _collectible.SetCentre(_dungeonGrid.cellMatrix[i][j].GetPosition());
+    _collectible.Render(context);
+    _dungeonGrid.initializeGrid();
 
 	//setup our test model
-	m_BasicModel.InitializeSphere(device);
-	m_BasicModel2.InitializeModel(device,"drone.obj");
-	m_BasicModel3.InitializeBox(device, 10.0f, 0.1f, 10.0f);	//box includes dimensions
+	//m_BasicModel.InitializeSphere(device);
+	//m_BasicModel2.InitializeModel(device,"drone.obj");
+	//m_BasicModel3.InitializeBox(device, 10.0f, 0.1f, 10.0f);	//box includes dimensions
 
 	//load and set up our Vertex and Pixel Shaders
 	m_BasicShaderPair.InitStandard(device, L"light_vs.cso", L"light_ps.cso");
+	m_BasicShaderPair_Normal.InitStandard(device, L"light_vs.cso", L"light_ps_normal.cso");
 
 	//load Textures
 	CreateDDSTextureFromFile(device, L"seafloor.dds",		nullptr,	m_texture1.ReleaseAndGetAddressOf());

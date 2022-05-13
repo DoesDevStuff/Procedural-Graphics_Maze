@@ -180,6 +180,12 @@
     <ClInclude Include="Input.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="modelclass.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\Audio.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\Effects.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\Keyboard.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\Mouse.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\PostProcess.h" />
+    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\SimpleMath.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="ReadData.h" />
     <ClInclude Include="RenderTexture.h" />
@@ -234,6 +240,12 @@
     </FxCompile>
     <FxCompile Include="light_ps.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="light_ps_normal.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="light_vs.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>

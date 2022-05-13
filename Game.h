@@ -12,6 +12,7 @@
 #include "Camera.h"
 #include "RenderTexture.h"
 #include "Terrain.h"
+#include "PostProcess.h"
 
 
 // A basic game implementation that creates a D3D11 device and
@@ -63,6 +64,13 @@ private:
     void CreateWindowSizeDependentResources();
 	void SetupGUI();
 
+    void SpawnPlayerPosition();
+    void RenderTextureMinimap();
+
+    bool CollisionCheck(ModelClass a, ModelClass b);
+    bool CellCollisionCheck(ModelClass a, Cell b);
+
+
     // Device resources.
     std::unique_ptr<DX::DeviceResources>    m_deviceResources;
 
@@ -79,6 +87,7 @@ private:
     std::unique_ptr<DirectX::EffectFactory>                                 m_fxFactory;
     std::unique_ptr<DirectX::SpriteBatch>                                   m_sprites;
     std::unique_ptr<DirectX::SpriteFont>                                    m_font;
+    std::unique_ptr<DirectX::BasicPostProcess>								m_postProcess;
 
 	// Scene Objects
 	std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>>  m_batch;
@@ -94,9 +103,15 @@ private:
 	//textures 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_texture1;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_texture2;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_texture3;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_texture4;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>                        m_texture5;
 
 	//Shaders
 	Shader																	m_BasicShaderPair;
+	Shader																	m_BasicShaderPair_Normal;
+	
+	
 
 	//Scene. 
 	Terrain																	m_Terrain;
@@ -104,12 +119,19 @@ private:
 	ModelClass																m_BasicModel2;
 	ModelClass																m_BasicModel3;
 
+    ModelClass																_playerBoxCollision;
+    ModelClass                                                              _collectible;
+    ModelClass                                                              _skybox;
+    ModelClass                                                              _cellBox;
+
+
 	//RenderTextures
 	RenderTexture*															m_FirstRenderPass;
 	RECT																	m_fullscreenRect;
 	RECT																	m_CameraViewRect;
 	
-
+    //DEBUG
+    std::wstring															debugLine;
 
 #ifdef DXTK_AUDIO
     std::unique_ptr<DirectX::AudioEngine>                                   m_audEngine;
@@ -130,4 +152,27 @@ private:
     DirectX::SimpleMath::Matrix                                             m_world;
     DirectX::SimpleMath::Matrix                                             m_view;
     DirectX::SimpleMath::Matrix                                             m_projection;
+
+    /// <summary>
+    /// Variables for Player & collision stuff
+    /// </summary>
+    bool                                                                    isColliding;
+    bool                                                                    isforwardColliding, isbackwardColliding;
+    bool                                                                    isMiniMapEnabled;
+    bool                                                                    _isPlaying;
+    bool																	enablePostProcess;
+
+    int                                                                     _playerPosition;
+    int                                                                     _gameScore;
+    int                                                                     _playerLives;
+
+    DirectX::SimpleMath::Vector3                                            _currentPlayerPosition;
+    DirectX::SimpleMath::Vector3                                            _colliderPosition;
+    DirectX::SimpleMath::Vector3                                            _playerInitialPosition;
+    DirectX::SimpleMath::Vector3                                            _playerInitialRotation;
+
+
+    // Dungeon Grid 
+    Grid                                                                    _dungeonGrid;
+
 };
