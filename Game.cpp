@@ -80,6 +80,8 @@ void Game::Initialize(HWND window, int width, int height)
     isColliding = false;
     isMiniMapEnabled = false;
     _isPlaying = false;
+    _isblurEnabled = false;
+
 
     _gameScore = 0;
     _playerPosition = 0;
@@ -267,7 +269,9 @@ void Game::Update(DX::StepTimer const& timer)
     }
 
     // POST Processing goes here, maybe blur / bloom ??
-
+    if (m_gameInputCommands.bloom) {
+        _isblurEnabled = !_isblurEnabled;
+    }
 
 	m_Camera01.Update();	//camera update.
 	m_Terrain.Update();		//terrain update.  doesnt do anything at the moment. 
@@ -450,13 +454,13 @@ void Game::Render()
     // Minimap Render to Texture
     RenderTextureMinimap();
 
-    /*
-    if (enableBlur)
+    
+    if (_isblurEnabled)
     {
         Blur();
     }
-    */
-    //else { /* REMOVE COMMENT ON ELSE LATER WHEN BLUR IS IMPLEMENTED
+    
+    else { 
         //prepare transform for floor object. 
         m_world = SimpleMath::Matrix::Identity; //set world back to identity
         SimpleMath::Matrix newPosition3 = SimpleMath::Matrix::CreateTranslation(0.0f, 0.0f, 0.0f);
@@ -503,7 +507,7 @@ void Game::Render()
                 }
             }
 
-       // } /* REMOVE COMMENT ON ELSE LATER WHEN BLUR IS IMPLEMENTED
+        } 
 
 
         /* First render player so that Collision will know beforehand where player is in current point of time */
@@ -892,12 +896,21 @@ void Game::CreateDeviceDependentResources()
 	m_BasicShaderPair_Normal.InitStandard(device, L"light_vs.cso", L"light_ps_normal.cso");
 
 	//load Textures
-	CreateDDSTextureFromFile(device, L"seafloor.dds",		nullptr,	m_texture1.ReleaseAndGetAddressOf());
-	CreateDDSTextureFromFile(device, L"EvilDrone_Diff.dds", nullptr,	m_texture2.ReleaseAndGetAddressOf());
+	//CreateDDSTextureFromFile(device, L"seafloor.dds",		nullptr,	m_texture1.ReleaseAndGetAddressOf());
+	//CreateDDSTextureFromFile(device, L"EvilDrone_Diff.dds", nullptr,	m_texture2.ReleaseAndGetAddressOf());
+    /* FIGURE THESE OUT AND ADD
+    * //load Textures
+	CreateDDSTextureFromFile(device, L"moon.dds", nullptr, m_texture1.ReleaseAndGetAddressOf()); // terrain / floor
+	CreateDDSTextureFromFile(device, L"obstaclecell.dds", nullptr, m_texture2.ReleaseAndGetAddressOf()); // obstacle walls
+	CreateDDSTextureFromFile(device, L"treasurecoin.dds", nullptr, m_texture3.ReleaseAndGetAddressOf()); // collectible
+	CreateDDSTextureFromFile(device, L"playercell.dds", nullptr, m_texture4.ReleaseAndGetAddressOf()); // player on minimap
+	CreateDDSTextureFromFile(device, L"skybox.dds", nullptr, m_texture5.ReleaseAndGetAddressOf()); // skybox
+    */
+
 
 	//Initialise Render to texture
 	m_FirstRenderPass = new RenderTexture(device, 800, 600, 1, 2);	//for our rendering, We dont use the last two properties. but.  they cant be zero and they cant be the same. 
-
+    m_RenderTexture = new RenderTexture(device, 1920, 1080, 1, 2); //blur
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
@@ -934,6 +947,109 @@ void Game::SetupGUI()
 		ImGui::SliderFloat("Wave Amplitude",	m_Terrain.GetAmplitude(), 0.0f, 10.0f);
 		ImGui::SliderFloat("Wavelength",		m_Terrain.GetWavelength(), 0.0f, 1.0f);
 	ImGui::End();
+}
+
+
+void Game::Blur()
+{
+    auto context = m_deviceResources->GetD3DDeviceContext();
+    auto renderTargetView = m_deviceResources->GetRenderTargetView();
+    auto depthTargetView = m_deviceResources->GetDepthStencilView();
+    // Set the render target to be the render to texture.
+    m_RenderTexture->setRenderTarget(context);
+    // Clear the render to texture.
+    m_RenderTexture->clearRenderTarget(context, 0.0f, 0.0f, 0.0f, 1.0f);
+
+    // Draw skybox here // translate to camera position
+
+    context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
+    context->OMSetDepthStencilState(m_states->DepthNone(), 0);
+    context->RSSetState(m_states->CullNone());
+
+    m_world = SimpleMath::Matrix::Identity;
+    SimpleMath::Matrix skyboxPosition = SimpleMath::Matrix::CreateTranslation(m_Camera01.getPosition());
+
+
+    m_world = m_world * skyboxPosition;
+    // Turn our shaders on,  set parameters // MuseumFloor
+    m_BasicShaderPair_Normal.EnableShader(context);
+    m_BasicShaderPair_Normal.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_texture5.Get());
+    //render our model
+    _skybox.Render(context);
+
+    //Reset Rendering states. 
+    context->OMSetBlendState(m_states->Opaque(), nullptr, 0xFFFFFFFF);
+    context->OMSetDepthStencilState(m_states->DepthDefault(), 0);
+    context->RSSetState(m_states->CullClockwise());
+
+    //prepare transform for floor object. 
+    m_world = SimpleMath::Matrix::Identity; //set world back to identity
+    SimpleMath::Matrix newPosition3 = SimpleMath::Matrix::CreateTranslation(0.0f, 0.0f, 0.0f);
+    SimpleMath::Matrix newScale = SimpleMath::Matrix::CreateScale(0.1);		//scale the terrain down a little. 
+    m_world = m_world * newScale * newPosition3;
+
+    //setup and draw floor
+    m_BasicShaderPair.EnableShader(context);
+    m_BasicShaderPair.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_texture1.Get());
+    m_Terrain.Render(context);
+
+    // CellGrid
+
+    for (int i = 0; i < _dungeonGrid.Size(); i++)
+    {
+        for (int j = 0; j < _dungeonGrid.Size(); j++)
+        {
+
+            Vector3 tempPosition = DirectX::SimpleMath::Vector3(i, 0.5f, j);
+            _dungeonGrid.cellMatrix[i][j].SetPosition(tempPosition);
+            _dungeonGrid.cellMatrix[i][j].SetCentre(tempPosition);
+
+            m_world = SimpleMath::Matrix::Identity; //set world back to identity
+            newPosition3 = SimpleMath::Matrix::CreateTranslation(_dungeonGrid.cellMatrix[i][j].GetPosition());
+            m_world = m_world * newPosition3;
+
+            if (_dungeonGrid.cellMatrix[i][j].GetState() == 1)
+            {
+                m_BasicShaderPair_Normal.EnableShader(context);
+                m_BasicShaderPair_Normal.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_texture2.Get());
+                _cellBox.SetCentre(_dungeonGrid.cellMatrix[i][j].GetPosition());
+                _cellBox.Render(context);
+            }
+            else if (_dungeonGrid.cellMatrix[i][j].GetState() == 3)
+            {
+                //setup and draw treasure // draw object
+                m_BasicShaderPair_Normal.EnableShader(context);
+                m_BasicShaderPair_Normal.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, m_texture3.Get());
+                _collectible.SetCentre(_dungeonGrid.cellMatrix[i][j].GetPosition());
+                _collectible.Render(context);
+            }
+            else {
+                // do nothing
+            }
+        }
+    }
+
+    /* First render player so that Intersect will know beforehand where player is in current point of time */
+
+    //prepare transform for Player object. // set coordinates
+    m_world = SimpleMath::Matrix::Identity; //set world back to identity
+    newPosition3 = SimpleMath::Matrix::CreateTranslation(m_Camera01.getPosition().x, m_Camera01.getPosition().y, m_Camera01.getPosition().z);
+    _playerBoxCollision.SetCentre(m_Camera01.getPosition());
+    newScale = SimpleMath::Matrix::CreateScale(1);
+    m_world = m_world * newScale * newPosition3;
+
+    //setup and draw rectangle
+    m_BasicShaderPair_Normal.EnableShader(context);
+    m_BasicShaderPair_Normal.SetShaderParameters(context, &m_world, &m_view, &m_projection, &m_Light, NULL); // invisible collision box for player
+    _playerBoxCollision.Render(context);
+
+    // Reset the render target back to the original back buffer and not the render to texture anymore.	
+    context->OMSetRenderTargets(1, &renderTargetView, depthTargetView);
+
+    // Apply post process effect
+    m_postProcess->SetEffect(BasicPostProcess::GaussianBlur_5x5);
+    m_postProcess->SetSourceTexture(m_RenderTexture->getShaderResourceView());
+    m_postProcess->Process(context);
 }
 
 

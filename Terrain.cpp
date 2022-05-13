@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Terrain.h"
+#include <iostream>
 
 
 Terrain::Terrain()
@@ -34,11 +35,14 @@ bool Terrain::Initialize(ID3D11Device* device, int terrainWidth, int terrainHeig
 	}
 
 	//this is how we calculate the texture coordinates first calculate the step size there will be between vertices. 
-	float textureCoordinatesStep = 5.0f / m_terrainWidth;  //tile 5 times across the terrain. 
+	// 5.0f tile 5 times across the terrain.
+	// tile 1.0f across terrain 512x512
+	float textureCoordinatesStep = 1.0f / m_terrainWidth;
+
 	// Initialise the data in the height map (flat).
-	for (int j = 0; j<m_terrainHeight; j++)
+	for (int j = 0; j < m_terrainHeight; j++)
 	{
-		for (int i = 0; i<m_terrainWidth; i++)
+		for (int i = 0; i < m_terrainWidth; i++)
 		{
 			index = (m_terrainHeight * j) + i;
 
@@ -61,18 +65,18 @@ bool Terrain::Initialize(ID3D11Device* device, int terrainWidth, int terrainHeig
 		return false;
 	}
 
-	// Initialize the vertex and index buffer that hold the geometry for the terrain.
+	// Initialize the vertex and index buffer that hold the geometry for the terrain. // second step - transfers array info into vertex buffers for DX Rendering
 	result = InitializeBuffers(device);
 	if (!result)
 	{
 		return false;
 	}
 
-	
+
 	return true;
 }
 
-void Terrain::Render(ID3D11DeviceContext * deviceContext)
+void Terrain::Render(ID3D11DeviceContext* deviceContext)
 {
 	// Put the vertex and index buffers on the graphics pipeline to prepare them for drawing.
 	RenderBuffers(deviceContext);
@@ -86,7 +90,7 @@ bool Terrain::CalculateNormals()
 	int i, j, index1, index2, index3, index, count;
 	float vertex1[3], vertex2[3], vertex3[3], vector1[3], vector2[3], sum[3], length;
 	DirectX::SimpleMath::Vector3* normals;
-	
+
 
 	// Create a temporary array to hold the un-normalized normal vectors.
 	normals = new DirectX::SimpleMath::Vector3[(m_terrainHeight - 1) * (m_terrainWidth - 1)];
@@ -96,9 +100,9 @@ bool Terrain::CalculateNormals()
 	}
 
 	// Go through all the faces in the mesh and calculate their normals.
-	for (j = 0; j<(m_terrainHeight - 1); j++)
+	for (j = 0; j < (m_terrainHeight - 1); j++)
 	{
-		for (i = 0; i<(m_terrainWidth - 1); i++)
+		for (i = 0; i < (m_terrainWidth - 1); i++)
 		{
 			index1 = (j * m_terrainHeight) + i;
 			index2 = (j * m_terrainHeight) + (i + 1);
@@ -136,9 +140,9 @@ bool Terrain::CalculateNormals()
 
 	// Now go through all the vertices and take an average of each face normal 	
 	// that the vertex touches to get the averaged normal for that vertex.
-	for (j = 0; j<m_terrainHeight; j++)
+	for (j = 0; j < m_terrainHeight; j++)
 	{
-		for (i = 0; i<m_terrainWidth; i++)
+		for (i = 0; i < m_terrainWidth; i++)
 		{
 			// Initialize the sum.
 			sum[0] = 0.0f;
@@ -217,6 +221,14 @@ bool Terrain::CalculateNormals()
 	return true;
 }
 
+DirectX::SimpleMath::Vector3 Terrain::GetDimensions()
+{
+	DirectX::SimpleMath::Vector3  m_terrainDimensions;
+	m_terrainDimensions.x = m_terrainWidth;
+	m_terrainDimensions.z = m_terrainHeight;
+	return m_terrainDimensions;
+}
+
 void Terrain::Shutdown()
 {
 	// Release the index buffer.
@@ -236,7 +248,7 @@ void Terrain::Shutdown()
 	return;
 }
 
-bool Terrain::InitializeBuffers(ID3D11Device * device )
+bool Terrain::InitializeBuffers(ID3D11Device* device)
 {
 	VertexType* vertices;
 	unsigned long* indices;
@@ -246,7 +258,7 @@ bool Terrain::InitializeBuffers(ID3D11Device * device )
 	int index, i, j;
 	int index1, index2, index3, index4; //geometric indices. 
 
-	// Calculate the number of vertices in the terrain mesh.
+	// Calculate the number of vertices in the terrain mesh. // two squares 
 	m_vertexCount = (m_terrainWidth - 1) * (m_terrainHeight - 1) * 6;
 
 	// Set the index count to the same as the vertex count.
@@ -268,17 +280,37 @@ bool Terrain::InitializeBuffers(ID3D11Device * device )
 
 	// Initialize the index to the vertex buffer.
 	index = 0;
+	bool inverted = false;
 
-	for (j = 0; j<(m_terrainHeight - 1); j++)
+	for (j = 0; j < (m_terrainHeight - 1); j++)
 	{
-		for (i = 0; i<(m_terrainWidth - 1); i++)
+		for (i = 0; i < (m_terrainWidth - 1); i++)
 		{
-			index1 = (m_terrainHeight * j) + i;          // Bottom left.
-			index2 = (m_terrainHeight * j) + (i + 1);      // Bottom right.
-			index3 = (m_terrainHeight * (j + 1)) + i;      // Upper left.
-			index4 = (m_terrainHeight * (j + 1)) + (i + 1);  // Upper right.
 
-															 // Upper left.
+			if (i == 0) {
+				if (j % 2 == 0) {
+					inverted = false;
+				}
+				else {
+					inverted = true;
+				}
+			}
+
+			if (inverted) {
+				index1 = (m_terrainHeight * j) + (i + 1);      // Bottom right.
+				index2 = (m_terrainHeight * (j + 1)) + (i + 1);  // Upper right.
+				index3 = (m_terrainHeight * j) + i;          // Bottom left.
+				index4 = (m_terrainHeight * (j + 1)) + i;      // Upper left.
+			}
+			else {
+				index1 = (m_terrainHeight * j) + i;          // Bottom left.
+				index2 = (m_terrainHeight * j) + (i + 1);      // Bottom right.
+				index3 = (m_terrainHeight * (j + 1)) + i;      // Upper left.
+				index4 = (m_terrainHeight * (j + 1)) + (i + 1);  // Upper right.
+			}
+			inverted = !inverted;
+
+			// Upper left.
 			vertices[index].position = DirectX::SimpleMath::Vector3(m_heightMap[index3].x, m_heightMap[index3].y, m_heightMap[index3].z);
 			vertices[index].normal = DirectX::SimpleMath::Vector3(m_heightMap[index3].nx, m_heightMap[index3].ny, m_heightMap[index3].nz);
 			vertices[index].texture = DirectX::SimpleMath::Vector2(m_heightMap[index3].u, m_heightMap[index3].v);
@@ -372,7 +404,7 @@ bool Terrain::InitializeBuffers(ID3D11Device * device )
 	return true;
 }
 
-void Terrain::RenderBuffers(ID3D11DeviceContext * deviceContext)
+void Terrain::RenderBuffers(ID3D11DeviceContext* deviceContext)
 {
 	unsigned int stride;
 	unsigned int offset;
@@ -400,19 +432,20 @@ bool Terrain::GenerateHeightMap(ID3D11Device* device)
 	int index;
 	float height = 0.0;
 
-	m_frequency = (6.283/m_terrainHeight) / m_wavelength; //we want a wavelength of 1 to be a single wave over the whole terrain.  A single wave is 2 pi which is about 6.283
+	m_frequency = (6.283 / m_terrainHeight) / m_wavelength; //we want a wavelength of 1 to be a single wave over the whole terrain.  A single wave is 2 pi which is about 6.283
+	// m_terrainHeight is actually the z axis
 
 	//loop through the terrain and set the hieghts how we want. This is where we generate the terrain
 	//in this case I will run a sin-wave through the terrain in one axis.
 
-	for (int j = 0; j<m_terrainHeight; j++)
+	for (int j = 0; j < m_terrainHeight; j++)
 	{
-		for (int i = 0; i<m_terrainWidth; i++)
+		for (int i = 0; i < m_terrainWidth; i++)
 		{
 			index = (m_terrainHeight * j) + i;
 
 			m_heightMap[index].x = (float)i;
-			m_heightMap[index].y = (float)(sin((float)i *(m_frequency))*m_amplitude); 
+			m_heightMap[index].y = GenerateRandomNumber(0.5f) * m_amplitude * 2.f;
 			m_heightMap[index].z = (float)j;
 		}
 	}
@@ -430,9 +463,270 @@ bool Terrain::GenerateHeightMap(ID3D11Device* device)
 	}
 }
 
+bool Terrain::SmoothenHeightMap(ID3D11Device* device)
+{
+	bool result;
+
+	int index, nx, nz;
+	float height = 0.0;
+	int neighbours[8] = {}; // array starts at 0, inclusive
+	int n = 8;
+
+	/* Initialise corner of height map */ // 1.
+	int bottomLeftCorner = 0;
+	int bottomRightCorner = (m_terrainHeight * (m_terrainHeight - 1));
+	int topLeftCorner = (m_terrainWidth - 1);
+	int topRightCorner = m_terrainHeight * (m_terrainHeight - 1) + (m_terrainWidth - 1);
+
+	//we want a wavelength of 1 to be a single wave over the whole terrain.  A single wave is 2 pi which is about 6.283
+	m_frequency = (6.283 / m_terrainHeight) / m_wavelength;
+	// m_terrainHeight is actually the z axis
+
+	for (int j = 0; j < m_terrainHeight; j++)
+	{
+		for (int i = 0; i < m_terrainWidth; i++)
+		{
+			index = (m_terrainHeight * j) + i;
+
+			float sum = m_heightMap[index].y;
+
+			// with more than 128 square dimensions, initial neighbours on bottom row might not exist
+			// can refractor this better if it works
+			if (m_heightMap[index].z + 1 >= m_terrainHeight || m_heightMap[index].z <= 0) {
+				// if no neighbours, set height to that of current index/element
+				neighbours[0], neighbours[1], neighbours[2] = m_heightMap[index].y;
+			}
+			else {
+				neighbours[0] = m_heightMap[(m_terrainHeight * (j + 1)) + (i - 1)].y; // top left
+				neighbours[1] = m_heightMap[(m_terrainHeight * (j + 1)) + (i)].y;     // top middle
+				neighbours[2] = m_heightMap[(m_terrainHeight * (j + 1)) + (i + 1)].y; // top right
+			}
+			neighbours[3] = m_heightMap[(m_terrainHeight * (j)) + (i - 1)].y;	  // middle left
+			neighbours[4] = m_heightMap[(m_terrainHeight * (j)) + (i + 1)].y;	  // middle right
+			if (m_heightMap[index].z <= 0 || m_heightMap[index].z + 1 >= m_terrainHeight) {
+				// if no neighbours, set height to that of current index/element
+				neighbours[5], neighbours[6], neighbours[7] = m_heightMap[index].y;
+			}
+			else {
+				neighbours[5] = m_heightMap[(m_terrainHeight * (j - 1)) + (i - 1)].y; // bottom left
+				neighbours[6] = m_heightMap[(m_terrainHeight * (j - 1)) + (i)].y;	  // bottom middle
+				neighbours[7] = m_heightMap[(m_terrainHeight * (j - 1)) + (i + 1)].y; // bottom right
+			}
+
+
+			for (int z = 0; z < n; z++)
+			{
+				// if out of map, take y of current index for sum
+				if (neighbours[z] < 0 || neighbours[z] >= m_terrainHeight * m_terrainWidth)
+				{
+					sum += m_heightMap[index].y;
+				}
+				else
+				{
+					sum += neighbours[z]; // if exists, include in sum
+				}
+			}
+
+			// smoothen based on neighbours
+			m_heightMap[index].y = sum / 9.0f; // current point n is no. of neighbours +1 for current vertex point// total of 9 points in a 3*3 grid
+		}
+	}
+
+
+	result = CalculateNormals();
+	if (!result)
+	{
+		return false;
+	}
+
+	result = InitializeBuffers(device);
+	if (!result)
+	{
+		return false;
+	}
+}
+
+bool Terrain::GenerateMidpointHeightMap(ID3D11Device* device)
+{
+	bool result;
+
+
+	int iter = 0; // iter for looping through midpoint passes
+	float height = 0.0;
+
+	//we want a wavelength of 1 to be a single wave over the whole terrain.  A single wave is 2 pi which is about 6.283
+	m_frequency = (6.283 / m_terrainHeight) / m_wavelength;
+	// m_terrainHeight is actually the z axis
+
+	//loop through the terrain and set the heights how we want. This is where we generate the terrain
+
+	/* Initialise corner of height map */ // 1.
+	int bottomLeftCorner = 0;
+	int bottomRightCorner = (m_terrainHeight * (m_terrainHeight - 1));
+	int topLeftCorner = (m_terrainWidth - 1);
+	int topRightCorner = m_terrainHeight * (m_terrainHeight - 1) + (m_terrainWidth - 1);
+
+	/* Set height on initial corners*/
+	m_heightMap[bottomLeftCorner].y = GenerateRandomNumber(0.1f) * m_amplitude * 5; // 0, 0 (x,z) // bottom left
+	m_heightMap[bottomRightCorner].y = GenerateRandomNumber(0.1f) * m_amplitude * 5; // (129 , 0) // bottom right
+	m_heightMap[topRightCorner].y = GenerateRandomNumber(0.1f) * m_amplitude * 5; // 129 , 129 // top right
+	m_heightMap[topLeftCorner].y = GenerateRandomNumber(0.1f) * m_amplitude * 5; // 0 , 129 // top left
+
+	/* End of Initialise corners of heightmap */
+
+	float leftX, rightX, bottomZ, topZ = 0.f;
+	//int test = (int)sqrt((double)m_terrainHeight - 1.0f);
+	int heightmapExponent = log(m_terrainWidth - 1) / log(2);
+	while (iter < heightmapExponent) // 2. iter < heightmap.exponent
+	{
+		int chunks = pow(2, iter);
+		int chunk_width = (m_terrainHeight - 1) / chunks;
+
+		for (int xChunk = 0; xChunk < chunks; xChunk++)
+		{
+			for (int yChunk = 0; yChunk < chunks; yChunk++)
+			{
+
+				leftX = chunk_width * xChunk;
+				rightX = leftX + chunk_width;
+				bottomZ = chunk_width * yChunk;
+				topZ = bottomZ + chunk_width;
+				MidpointDisplace(leftX, rightX, bottomZ, topZ); // coordinates
+
+			}
+		}
+
+		iter++;
+
+	}
+
+	result = CalculateNormals();
+	if (!result)
+	{
+		return false;
+	}
+
+	result = InitializeBuffers(device);
+	if (!result)
+	{
+		return false;
+	}
+}
+
+void Terrain::MidpointDisplace(float lx, float rx, float bz, float tz)
+{
+	// let
+	int index;
+	float cx = (lx + rx) / 2.f;
+	float cz = (bz + tz) / 2.f;
+
+	// Heights at corners
+	float bottomLeftY, bottomRightY, topLeftY, topRightY = 0.f;
+	float topMidpointY, leftMidpointY, bottomMidpointY, rightMidpointY, centreMidpointY = 0.f;
+
+	// height value at that point // corners
+	// We are using this to find the points on the height map
+	for (int j = 0; j < m_terrainHeight; j++)
+	{
+		for (int i = 0; i < m_terrainWidth; i++)
+		{
+			index = (m_terrainHeight * j) + i;
+
+			// Bottom Left Corner // Getting Y at this position
+			if (m_heightMap[index].x == lx && m_heightMap[index].z == bz)
+			{
+				// Get
+				bottomLeftY = m_heightMap[index].y;
+			}
+			// Bottom Right Corner
+			if (m_heightMap[index].x == rx && m_heightMap[index].z == bz)
+			{
+				bottomRightY = m_heightMap[index].y;
+			}
+			// Top Left Corner
+			if (m_heightMap[index].x == lx && m_heightMap[index].z == tz)
+			{
+				topLeftY = m_heightMap[index].y;
+			}
+			// Top Right Corner
+			if (m_heightMap[index].x == rx && m_heightMap[index].z == tz)
+			{
+				topRightY = m_heightMap[index].y;
+			}
+		}
+	}
+
+	topMidpointY = CalculateAverage_2(topLeftY, topRightY);
+	leftMidpointY = CalculateAverage_2(bottomLeftY, topLeftY);
+	bottomMidpointY = CalculateAverage_2(bottomLeftY, bottomRightY);
+	rightMidpointY = CalculateAverage_2(bottomRightY, topRightY);
+	centreMidpointY = CalculateAverage_4(topMidpointY, leftMidpointY, bottomMidpointY, rightMidpointY);
+	// Once these are done push to midpoint **
+
+	// Set Midpoints
+	for (int j = 0; j < m_terrainHeight; j++)
+	{
+		for (int i = 0; i < m_terrainWidth; i++)
+		{
+			index = (m_terrainHeight * j) + i;
+			// Bottom Midpoint
+			if (m_heightMap[index].x == cx && m_heightMap[index].z == bz)
+			{
+				// jittery spread
+				m_heightMap[index].y = bottomMidpointY * GenerateRandomNumber(0.1f);
+			}
+			// Top Midpoint
+			if (m_heightMap[index].x == cx && m_heightMap[index].z == tz)
+			{
+				m_heightMap[index].y = topMidpointY * GenerateRandomNumber(0.1f);
+			}
+			// Left Midpoint
+			if (m_heightMap[index].x == lx && m_heightMap[index].z == cz)
+			{
+				m_heightMap[index].y = leftMidpointY * GenerateRandomNumber(0.1f);
+			}
+			// Right Midpoint
+			if (m_heightMap[index].x == rx && m_heightMap[index].z == cz)
+			{
+				m_heightMap[index].y = rightMidpointY * GenerateRandomNumber(0.1f);
+			}
+			// Centre Midpoint
+			if (m_heightMap[index].x == cx && m_heightMap[index].z == cz)
+			{
+				m_heightMap[index].y = centreMidpointY * GenerateRandomNumber(0.1f);
+			}
+		}
+	}
+
+}
+
+float Terrain::CalculateAverage_2(float a, float b)
+{
+	float avg = (a + b) / 2.f;
+	return avg;
+}
+
+float Terrain::CalculateAverage_3(float a, float b, float c)
+{
+	float avg = (a + b + c) / 3.f;
+	return avg;
+}
+
+float Terrain::CalculateAverage_4(float a, float b, float c, float d)
+{
+	float avg = (a + b + c + d) / 4.f;
+	return avg;
+}
+
+float Terrain::GenerateRandomNumber(float spread)
+{
+	float x = ((float)rand() / (RAND_MAX));
+	return x;
+}
+
 bool Terrain::Update()
 {
-	return true; 
+	return true;
 }
 
 float* Terrain::GetWavelength()

@@ -12,12 +12,13 @@ struct InputCommands
 	bool left;
 	bool rotRight;
 	bool rotLeft;
-	bool generate;
 
+	bool generate;
 	bool smoothen;
 	bool midpoint;
 	bool cellularAutomata;
 	bool isMiniMapEnabled;
+	bool bloom;
 };
 
 

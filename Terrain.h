@@ -24,10 +24,13 @@ public:
 	bool Initialize(ID3D11Device*, int terrainWidth, int terrainHeight);
 	void Render(ID3D11DeviceContext*);
 	bool GenerateHeightMap(ID3D11Device*);
+	bool GenerateMidpointHeightMap(ID3D11Device*);
+	bool SmoothenHeightMap(ID3D11Device*);
 	bool Update();
 	float* GetWavelength();
-
 	float* GetAmplitude();
+
+	DirectX::SimpleMath::Vector3 GetDimensions(); // should this be in vertex ?? Will figure later
 
 private:
 	bool CalculateNormals();
@@ -36,6 +39,11 @@ private:
 	bool InitializeBuffers(ID3D11Device*);
 	void RenderBuffers(ID3D11DeviceContext*);
 	
+	float GenerateRandomNumber(float spread);
+	void MidpointDisplace(float lx, float rx, float by, float ty);
+	float CalculateAverage_2(float a, float b);
+	float CalculateAverage_3(float a, float b, float c);
+	float CalculateAverage_4(float a, float b, float c, float d);
 
 private:
 	bool m_terrainGeneratedToggle;

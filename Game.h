@@ -66,6 +66,7 @@ private:
 
     void SpawnPlayerPosition();
     void RenderTextureMinimap();
+    void Blur();
 
     bool CollisionCheck(ModelClass a, ModelClass b);
     bool CellCollisionCheck(ModelClass a, Cell b);
@@ -127,6 +128,7 @@ private:
 
 	//RenderTextures
 	RenderTexture*															m_FirstRenderPass;
+    RenderTexture*                                                          m_RenderTexture;
 	RECT																	m_fullscreenRect;
 	RECT																	m_CameraViewRect;
 	
@@ -161,6 +163,7 @@ private:
     bool                                                                    isMiniMapEnabled;
     bool                                                                    _isPlaying;
     bool																	enablePostProcess;
+    bool																	_isblurEnabled;
 
     int                                                                     _playerPosition;
     int                                                                     _gameScore;
