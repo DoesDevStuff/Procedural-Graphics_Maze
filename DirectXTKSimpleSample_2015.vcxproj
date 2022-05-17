@@ -166,9 +166,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="A_starAlgo.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Cell.h" />
     <ClInclude Include="DeviceResources.h" />
     <ClInclude Include="Game.h" />
+    <ClInclude Include="Grid.h" />
     <ClInclude Include="imconfig.h" />
     <ClInclude Include="imgui.h" />
     <ClInclude Include="imgui_impl_dx11.h" />
@@ -180,23 +183,21 @@
     <ClInclude Include="Input.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="modelclass.h" />
-    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\Audio.h" />
-    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\Effects.h" />
-    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\Keyboard.h" />
-    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\Mouse.h" />
-    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\PostProcess.h" />
-    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\SimpleMath.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="ReadData.h" />
     <ClInclude Include="RenderTexture.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="ShaderBlend.h" />
     <ClInclude Include="StepTimer.h" />
     <ClInclude Include="Terrain.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="A_starAlgo.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Cell.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="Grid.cpp" />
     <ClCompile Include="imgui.cpp" />
     <ClCompile Include="imgui_demo.cpp" />
     <ClCompile Include="imgui_draw.cpp" />
@@ -215,6 +216,7 @@
     </ClCompile>
     <ClCompile Include="RenderTexture.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="ShaderBlend.cpp" />
     <ClCompile Include="Terrain.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -229,6 +231,18 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="directx.ico" />
+    <Image Include="exitCollectible.dds" />
+    <Image Include="GrayStoneMoss.dds" />
+    <Image Include="lavafloor.dds" />
+    <Image Include="mossDungeonWall.dds" />
+    <Image Include="mossWall.dds" />
+    <Image Include="playerEyes.dds" />
+    <Image Include="Redfloor.dds" />
+    <Image Include="seafloor.dds" />
+    <Image Include="sky.dds" />
+    <Image Include="sky2.dds" />
+    <Image Include="sky3.dds" />
+    <Image Include="wallDungeon.dds" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="colour_ps.hlsl">

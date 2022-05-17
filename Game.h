@@ -6,6 +6,7 @@
 #include "DeviceResources.h"
 #include "StepTimer.h"
 #include "Shader.h"
+#include"ShaderBlend.h"
 #include "modelclass.h"
 #include "Light.h"
 #include "Input.h"
@@ -13,7 +14,12 @@
 #include "RenderTexture.h"
 #include "Terrain.h"
 #include "PostProcess.h"
+#include "Cell.h"
+#include "Grid.h"
+#include "A_starAlgo.h"
 
+//Effects attempt
+#include <Effects.h>
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
@@ -67,6 +73,8 @@ private:
     void SpawnPlayerPosition();
     void RenderTextureMinimap();
     void Blur();
+    void Bloom();
+
 
     bool CollisionCheck(ModelClass a, ModelClass b);
     bool CellCollisionCheck(ModelClass a, Cell b);
@@ -89,6 +97,11 @@ private:
     std::unique_ptr<DirectX::SpriteBatch>                                   m_sprites;
     std::unique_ptr<DirectX::SpriteFont>                                    m_font;
     std::unique_ptr<DirectX::BasicPostProcess>								m_postProcess;
+    std::unique_ptr<DirectX::BasicPostProcess>								m_postProcess1;
+
+    //Effects
+    //std::unique_ptr<BasicEffect>                                            effect;
+    
 
 	// Scene Objects
 	std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>>  m_batch;
@@ -111,7 +124,7 @@ private:
 	//Shaders
 	Shader																	m_BasicShaderPair;
 	Shader																	m_BasicShaderPair_Normal;
-	
+	Shader2																	m_BasicShaderPair2;
 	
 
 	//Scene. 
@@ -129,6 +142,7 @@ private:
 	//RenderTextures
 	RenderTexture*															m_FirstRenderPass;
     RenderTexture*                                                          m_RenderTexture;
+    RenderTexture*                                                          m_RenderTexture1;
 	RECT																	m_fullscreenRect;
 	RECT																	m_CameraViewRect;
 	
@@ -160,10 +174,12 @@ private:
     /// </summary>
     bool                                                                    isColliding;
     bool                                                                    isforwardColliding, isbackwardColliding;
+    
     bool                                                                    isMiniMapEnabled;
     bool                                                                    _isPlaying;
     bool																	enablePostProcess;
     bool																	_isblurEnabled;
+    bool                                                                    _isBloom;
 
     int                                                                     _playerPosition;
     int                                                                     _gameScore;
@@ -177,5 +193,9 @@ private:
 
     // Dungeon Grid 
     Grid                                                                    _dungeonGrid;
+
+    Cell                                                                    m_Cell;
+
+    AStar                                                                   m_AStar;
 
 };

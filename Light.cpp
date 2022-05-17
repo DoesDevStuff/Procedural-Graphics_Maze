@@ -1,3 +1,4 @@
+
 // Light class
 // Holds data that represents a single light source
 #include "pch.h"

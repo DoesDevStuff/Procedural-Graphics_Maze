@@ -29,10 +29,10 @@ Camera::Camera()
 	m_right.x = 0.0f;
 	m_right.y = 0.0f;
 	m_right.z = 0.0f;
-	
-	//
-	m_movespeed = 0.30;
-	m_camRotRate = 3.0;
+
+
+	m_movespeed = 0.05;
+	m_camRotRate = 1.5;
 
 	//force update with initial values to generate other camera data correctly for first update. 
 	Update();
@@ -45,9 +45,16 @@ Camera::~Camera()
 
 void Camera::Update()
 {
+	/* Original Code */
+	/*
 	//rotation in yaw - using the paramateric equation of a circle
 	m_forward.x = sin((m_orientation.y)*3.1415f / 180.0f);
 	m_forward.z = cos((m_orientation.y)*3.1415f / 180.0f);
+	*/
+	/* Code from CMP502 */
+	m_forward.x = cos((m_orientation.y) * 3.1415f / 180.0f) * sin((m_orientation.x) * 3.1415f / 180.0f);
+	m_forward.z = sin((m_orientation.y) * 3.1415f / 180.0f) * sin((m_orientation.x) * 3.1415f / 180.0f);
+	m_forward.y = cos((m_orientation.x) * 3.1415f / 180.0f);
 	m_forward.Normalize();
 
 	//create right vector from look Direction

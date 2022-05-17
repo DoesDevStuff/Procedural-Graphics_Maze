@@ -24,8 +24,15 @@ void Input::Initialise(HWND window)
 	m_GameInput.rotRight				= false;
 	m_GameInput.rotLeft					= false;
 
+	m_GameInput.up						= false;
+	m_GameInput.down					= false;
+
+	m_GameInput.lookUp					= false;
+	m_GameInput.lookDown				= false;
+
 	m_GameInput.isMiniMapEnabled		= false;
 	m_GameInput.bloom					= false;
+	m_GameInput.blurred					= false;
 }
 
 void Input::Update()
@@ -72,6 +79,11 @@ void Input::Update()
 	else m_GameInput.down = false;
 
 	*/
+	if (kb.LeftShift) m_GameInput.up = true;
+	else m_GameInput.up = false;
+
+	if (kb.LeftControl) m_GameInput.down = true;
+	else m_GameInput.down = false;
 
 
 
@@ -92,11 +104,13 @@ void Input::Update()
 	else      m_GameInput.cellularAutomata = false;
 
 	//B		Blurs (similar to bloom)
-	if (m_KeyboardTracker.IsKeyPressed(DirectX::Keyboard::B)) m_GameInput.bloom = true;
-	else      m_GameInput.bloom = false;
+	if (m_KeyboardTracker.IsKeyPressed(DirectX::Keyboard::B)) m_GameInput.blurred = true;
+	else      m_GameInput.blurred = false;
 
+	if (m_KeyboardTracker.IsKeyPressed(DirectX::Keyboard::F)) m_GameInput.bloom = true;
+	else      m_GameInput.bloom = false;
 	//M		Minimap
-	if (m_KeyboardTracker.IsKeyPressed(DirectX::Keyboard::V)) m_GameInput.isMiniMapEnabled = true;
+	if (m_KeyboardTracker.IsKeyPressed(DirectX::Keyboard::M)) m_GameInput.isMiniMapEnabled = true;
 	else      m_GameInput.isMiniMapEnabled = false;
 }
 

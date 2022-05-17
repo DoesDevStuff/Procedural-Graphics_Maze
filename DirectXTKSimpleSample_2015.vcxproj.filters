@@ -68,12 +68,12 @@
     <ClInclude Include="imgui_impl_win32.h">
       <Filter>Imgui</Filter>
     </ClInclude>
-    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\PostProcess.h" />
-    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\SimpleMath.h" />
-    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\Audio.h" />
-    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\Effects.h" />
-    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\Keyboard.h" />
-    <ClInclude Include="packages\directxtk_desktop_2015.2019.5.31.1\include\Mouse.h" />
+    <ClInclude Include="Cell.h" />
+    <ClInclude Include="Grid.h" />
+    <ClInclude Include="A_starAlgo.h" />
+    <ClInclude Include="ShaderBlend.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -119,6 +119,12 @@
     <ClCompile Include="imgui_impl_win32.cpp">
       <Filter>Imgui</Filter>
     </ClCompile>
+    <ClCompile Include="Cell.cpp" />
+    <ClCompile Include="Grid.cpp" />
+    <ClCompile Include="A_starAlgo.cpp" />
+    <ClCompile Include="ShaderBlend.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -136,6 +142,42 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="directx.ico">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="exitCollectible.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="GrayStoneMoss.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="lavafloor.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="mossDungeonWall.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="mossWall.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="playerEyes.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Redfloor.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="seafloor.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="sky.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="sky2.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="sky3.dds">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="wallDungeon.dds">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>

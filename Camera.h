@@ -24,7 +24,7 @@ private:
 	DirectX::SimpleMath::Vector3	m_up;
 	DirectX::SimpleMath::Vector3	m_orientation;			//vector storing pitch yaw and roll. 
 
-	float	m_movespeed ;	
+	float	m_movespeed;
 	float	m_camRotRate;
 
 };
