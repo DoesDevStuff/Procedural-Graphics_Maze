@@ -1,5 +1,8 @@
 # Procedural-Graphics_Maze
-![image](https://user-images.githubusercontent.com/74312830/169811734-1300e73d-1604-4b4e-a0a6-c6f60f693117.png)
+## Video Showcase
+
+https://user-images.githubusercontent.com/74312830/227733655-aa5c08d9-f0ac-4586-ab73-9be1af55513e.mp4
+
 
 # Introduction
 The objective of this project demo was to showcase the use of DirectX 11 and the DirectX Toolkit to create a 3D game with procedurally generated content. The project made use of a variety of inbuilt libraries such as the SimpleMath library to assist in adding features within the project.The full working project was built within Visual Studio 2019 and made use of the directxtk framework (2015) which included support for post processing handling as well.<br>
